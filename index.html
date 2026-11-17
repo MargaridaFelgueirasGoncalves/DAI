@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>DAI · Operação 241</title>
+<style>
+:root{--bg:#f4efe4;--card:#fffaf0;--ink:#2a2420;--mut:#7a6f63;--red:#a3201a;--line:#d8cdb8;color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#141211;--card:#1f1b19;--ink:#ece4d6;--mut:#a09585;--red:#e0584f;--line:#3a332e;color-scheme:dark}}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Courier New",Courier,monospace;line-height:1.5}
+main{max-width:560px;margin:0 auto;padding:20px 16px 48px}
+h1{font-size:20px;letter-spacing:2px;margin:0}
+.stamp{display:inline-block;border:2px solid var(--red);color:var(--red);padding:2px 8px;transform:rotate(-3deg);font-weight:bold;margin:8px 0 4px}
+.sub{color:var(--mut);font-size:13px;margin:0 0 18px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:14px;margin-bottom:12px}
+.card.lock{opacity:.5}
+.card h2{font-size:15px;margin:0 0 6px}
+.row{display:flex;gap:8px;margin-top:8px}
+input{flex:1;min-width:0;padding:10px;font:inherit;border:1px solid var(--line);border-radius:4px;background:var(--bg);color:var(--ink)}
+button{padding:10px 14px;font:inherit;border:0;border-radius:4px;background:var(--red);color:#fff;cursor:pointer}
+.msg{font-size:13px;margin-top:6px;min-height:18px;color:var(--red)}
+.ok{color:var(--mut)}
+.tile{display:inline-flex;align-items:center;justify-content:center;width:38px;height:44px;margin:3px;border:2px solid var(--ink);border-radius:4px;background:var(--card);color:var(--ink);font:bold 20px "Courier New",monospace;padding:0}
+.rack{min-height:56px}
+.quip{margin-top:6px;font-size:14px;font-style:italic;color:var(--red)}
+.slot{border-style:dashed}
+</style>
+</head>
+<body>
+<main>
+<h1>DEPARTAMENTO DE ASSUNTOS INEXPLICÁVEIS</h1>
+<div class="stamp">CONFIDENCIAL</div>
+<p class="sub">Operação 241 · Terminal do Investigador · Assinado: O Arquivista</p>
+<div id="days"></div>
+<div id="final"></div>
+</main>
+<script>
+// v2 (dias 4 e 6 atualizados). Para só abrir um dia por data, define START (ex.: "2026-12-01"). Vazio = só depende de resolver o dia anterior.
+const START = "";
+const SALT = "dai241:";
+const D = [
+ {t:"O recrutamento", l:"C", h:"6d46d2e30651206f65353170e889bb1fe9784070ec03eb09b8d1b9296d55ad1e"},
+ {t:"O atleta desaparecido", l:"A", h:"f382e77bdcaef80815729ee6bb74faa1836a8d42de2f845fee0ec8b6afe8d589"},
+ {t:"A mensagem deslocada", l:"X", h:"fcc18709fd9354776ad13546b161ea12dd6d3bdcfa3320a95556ded85eba0232"},
+ {t:"As peças do atleta", l:"E", h:"b0315ae6698d190bd11c2461ae0b267501fb772c4c6a475ab310844add2c29ac"},
+ {t:"O código do Arquivista", l:"A", h:"dddb48ea40fe960ca980c710dfe5784ede6c29a6dd46fe742b20e5b0c3b9cf0b"},
+ {t:"O trail do Arquivista", l:"R", h:"d83529f61a4317c4af1946628ef4a80b2420a909bf6c67ec91c716671627bf36"},
+ {t:"A classificação", l:"I", h:"12d43f93e4b56c1a559d11ac4640ab50816cdcad204a4b5fd5bf7cc485f82ad2"},
+ {t:"A cifra da pista", l:"B", h:"3e36264b33998c792301b0c89492df638a82feb87190bcf89417e9c84fcaee99"},
+ {t:"O último documento", l:"AA", h:"ecf5cf27438195deecf11a95827722e8bb1a7a196113407d4ddafdd818052d93"}
+];
+const MSG = [
+ "Uau, provaste que sabes o abecedário. Impressionante. O Arquivista está orgulhoso, quase a chorar.",
+ "44 minutos exatos. O Arquivista admite que sempre achou que ias errar, mas adora ter-se enganado.",
+ "Contaste os lados de um triângulo. Génio da geometria, e o Arquivista tem uma fraqueza por génios.",
+ "Quinze letras por ordem sem ajuda de ninguém. Continua assim, o Arquivista já está a ficar apaixonado.",
+ "Morse lido ao contrário. Típico de ti: fazes tudo ao teu jeito e acabas por acertar. O Arquivista derrete-se.",
+ "Calculaste altitudes sem sair do sofá. Heroico. O Arquivista já te quer ver a subir montanhas, mas com ele ao lado.",
+ "Ordenaste cinco corredores. Chegar em primeiro é contigo. O Arquivista aplaude em segredo.",
+ "Decifraste uma cifra do século XVI. Podias ter sido espião, mas ainda bem que és só meu.",
+ "Estás quase na linha da meta! Estás preparado para o dia de amanhã?"
+];
+// Código do cadeado cifrado com a frase final (só se abre com ABRE A CAIXA)
+const BLOB = "olrggPaaxkqhS0k3BKREh/1RnotbkhCXAfh+pCBAhrE=";
+async function unlock(p){
+  const raw=Uint8Array.from(atob(BLOB),c=>c.charCodeAt(0));
+  const km=await crypto.subtle.importKey("raw",new TextEncoder().encode(p),"PBKDF2",false,["deriveKey"]);
+  const k=await crypto.subtle.deriveKey({name:"PBKDF2",salt:new TextEncoder().encode("dai241"),iterations:100000,hash:"SHA-256"},km,{name:"AES-GCM",length:256},false,["decrypt"]);
+  const out=await crypto.subtle.decrypt({name:"AES-GCM",iv:raw.slice(0,12)},k,raw.slice(12));
+  return new TextDecoder().decode(out);
+}
+const norm = s => s.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[^a-z0-9]/g,"");
+async function sha(s){const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(SALT+s));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join("")}
+let S = {};
+try{S = JSON.parse(localStorage.getItem("dai241")||"{}")}catch(e){}
+const save = () => {try{localStorage.setItem("dai241",JSON.stringify(S))}catch(e){}};
+function open(i){
+  if(i>0 && !S[i-1]) return false;
+  if(START){const d=new Date(START+"T00:00:00");d.setDate(d.getDate()+i);if(new Date()<d) return false}
+  return true;
+}
+function render(){
+  const box=document.getElementById("days"); box.innerHTML="";
+  D.forEach((d,i)=>{
+    const c=document.createElement("div"); const o=open(i);
+    c.className="card"+(o||S[i]?"":" lock");
+    let h=`<h2>DIA ${i+1} · ${d.t}</h2>`;
+    if(S[i]){h+=`<div class="ok">Resposta registada: ${S[i].toUpperCase()}</div>${d.l.split("").map(x=>`<span class="tile">${x}</span>`).join("")}<div class="quip">${MSG[i]}</div>`}
+    else if(o){h+=`<div class="row"><input id="a${i}" placeholder="Resposta" autocomplete="off"><button data-i="${i}">Validar</button></div><div class="msg" id="m${i}"></div>`}
+    else h+=`<div class="ok">Documento ainda selado.</div>`;
+    c.innerHTML=h; box.appendChild(c);
+  });
+  box.querySelectorAll("button").forEach(b=>b.onclick=async()=>{
+    const i=+b.dataset.i, v=document.getElementById("a"+i).value, m=document.getElementById("m"+i);
+    if(!norm(v)){return}
+    if(await sha(norm(v))===D[i].h){S[i]=v.trim();if(i===8)S.t9=Date.now();save();render();renderFinal()}
+    else m.textContent="Resposta incorreta. O Arquivista não está impressionado."
+  });
+}
+let rack=[], built=[];
+// O dia 10 abre à meia-noite seguinte ao momento em que o dia 9 foi resolvido (hora do dispositivo).
+function opensAt(){
+  if(!S.t9){S.t9=Date.now();save()}
+  const d=new Date(S.t9);
+  return new Date(d.getFullYear(),d.getMonth(),d.getDate()+1,0,0,0).getTime();
+}
+function renderFinal(){
+  const f=document.getElementById("final");
+  if(S.done){f.innerHTML=`<div class="card"><h2>MISSÃO CONCLUÍDA</h2><p>Dossier desbloqueado. O Arquivista espera por ti. O código do cadeado é:</p><div class="rack">${String(S.code).split("").map(x=>`<span class="tile">${x}</span>`).join("")}</div></div>`;return}
+  if(!D.every((_,i)=>S[i])){f.innerHTML="";return}
+  if(Date.now()<opensAt()){f.innerHTML=`<div class="card lock"><h2>DIA 10 · O ARQUIVO PERDIDO</h2><div class="ok">Documento ainda selado. O Arquivista abre-o à meia-noite.</div></div>`;return}
+  if(!rack.length&&!built.length) rack=D.flatMap(d=>d.l.split(""));
+  f.innerHTML=`<div class="card"><h2>DIA 10 · O ARQUIVO PERDIDO</h2><p>Reúne os fragmentos que conquistaste. Ordena-os para formar a mensagem final: são três palavras, e usas todas as letras.</p><div class="rack" id="rk"></div><div class="rack" id="bd"></div><div class="row"><button id="rs">Recomeçar</button></div><div class="msg" id="fm"></div></div>`;
+  const rk=f.querySelector("#rk"), bd=f.querySelector("#bd");
+  rack.forEach((l,i)=>{const t=document.createElement("button");t.className="tile";t.textContent=l;t.onclick=()=>{built.push(l);rack.splice(i,1);renderFinal();check()};rk.appendChild(t)});
+  built.forEach((l,i)=>{const t=document.createElement("button");t.className="tile slot";t.textContent=l;t.onclick=()=>{rack.push(l);built.splice(i,1);renderFinal()};bd.appendChild(t)});
+  f.querySelector("#rs").onclick=()=>{rack=D.flatMap(d=>d.l.split(""));built=[];renderFinal()};
+}
+async function check(){
+  if(rack.length) return;
+  try{S.code=await unlock(built.join("").toLowerCase());S.done=1;save();renderFinal()}
+  catch(e){const m=document.getElementById("fm");if(m)m.textContent="Ainda não. Tenta outra ordem."}
+}
+render();renderFinal();
+setInterval(()=>{if(!S.done&&D.every((_,i)=>S[i])&&Date.now()>=opensAt()&&!document.getElementById("rk"))renderFinal()},20000);
+</script>
+</body>
+</html>
