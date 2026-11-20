@@ -62,7 +62,7 @@ const MSG = [
  "Estás quase na linha da meta! Estás preparado para o dia de amanhã?"
 ];
 // Código do cadeado cifrado com a frase final (só se abre com ABRE A CAIXA)
-const BLOB = "olrggPaaxkqhS0k3BKREh/1RnotbkhCXAfh+pCBAhrE=";
+const BLOB = "nmkqrEgQgTuvg3wnpQOvTx87jOIFZscRInnrhobIokk=";
 async function unlock(p){
   const raw=Uint8Array.from(atob(BLOB),c=>c.charCodeAt(0));
   const km=await crypto.subtle.importKey("raw",new TextEncoder().encode(p),"PBKDF2",false,["deriveKey"]);
